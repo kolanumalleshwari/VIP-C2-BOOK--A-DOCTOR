@@ -13,9 +13,9 @@ export const SocketProvider = ({ children }) => {
     let socketInstance;
 
     if (user) {
-      // Connect to the backend socket server (Vite configuration proxies root to localhost:5000 in dev)
-      // For socket connections, we use the root URL.
-      socketInstance = io(window.location.origin, {
+      // Connect to the backend socket server
+      const socketUrl = import.meta.env.VITE_API_URL || window.location.origin;
+      socketInstance = io(socketUrl, {
         transports: ['websocket'],
       });
 

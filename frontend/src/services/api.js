@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '', // Handled by Vite proxy
+  baseURL: import.meta.env.VITE_API_URL || '',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -63,8 +63,8 @@ api.interceptors.response.use(
         }
 
         console.log('Access token expired. Requesting rotated token pair...');
-        // Request token refresh
-        const res = await axios.post('/api/auth/refresh', { refreshToken: storedRefreshToken });
+        const baseURL = import.meta.env.VITE_API_URL || '';
+        const res = await axios.post(`${baseURL}/api/auth/refresh`, { refreshToken: storedRefreshToken });
         const { accessToken, refreshToken } = res.data;
 
         // Update local storage
