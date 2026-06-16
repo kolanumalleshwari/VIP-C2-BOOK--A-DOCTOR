@@ -75,7 +75,7 @@ const Navbar = () => {
               <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
                 <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" />
               </svg>
-              <span>MedConnect</span>
+              <span>MediConnect Pro™</span>
             </Link>
           </div>
 
@@ -86,7 +86,7 @@ const Navbar = () => {
             </Link>
             {user && (
               <Link
-                to={user.role === 'Admin' ? '/admin-dashboard' : user.role === 'Doctor' ? '/doctor-dashboard' : '/patient-dashboard'}
+                to={user.role === 'Super Admin' ? '/super-admin-dashboard' : user.role === 'Admin' ? '/admin-dashboard' : user.role === 'Doctor' ? '/doctor-dashboard' : '/patient-dashboard'}
                 className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-500"
               >
                 Dashboard
@@ -159,7 +159,7 @@ const Navbar = () => {
                         <p className="text-[10px] text-slate-400 truncate mt-0.5">{user.email}</p>
                       </div>
                       <Link
-                        to={user.role === 'Admin' ? '/admin-dashboard' : user.role === 'Doctor' ? '/doctor-dashboard' : '/patient-dashboard'}
+                        to={user.role === 'Super Admin' ? '/super-admin-dashboard' : user.role === 'Admin' ? '/admin-dashboard' : user.role === 'Doctor' ? '/doctor-dashboard' : '/patient-dashboard'}
                         className="flex items-center px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50"
                         onClick={() => setProfileDropdownOpen(false)}
                       >
@@ -210,7 +210,7 @@ const Navbar = () => {
             </Link>
             {user && (
               <Link
-                to={user.role === 'Admin' ? '/admin-dashboard' : user.role === 'Doctor' ? '/doctor-dashboard' : '/patient-dashboard'}
+                to={user.role === 'Super Admin' ? '/super-admin-dashboard' : user.role === 'Admin' ? '/admin-dashboard' : user.role === 'Doctor' ? '/doctor-dashboard' : '/patient-dashboard'}
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               >

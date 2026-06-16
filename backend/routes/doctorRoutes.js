@@ -6,6 +6,6 @@ const router = express.Router();
 
 router.get('/', getDoctors);
 router.get('/:id', getDoctorById);
-router.put('/:id/approve', protect, restrictTo('Admin'), approveDoctor);
+router.put('/:id/approve', protect, restrictTo('Admin', 'Super Admin'), approveDoctor);
 
 export default router;

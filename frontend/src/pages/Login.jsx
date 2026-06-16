@@ -23,7 +23,9 @@ const Login = () => {
     try {
       const data = await login(email, password);
       // Redirect based on role
-      if (data.user.role === 'Admin') {
+      if (data.user.role === 'Super Admin') {
+        navigate('/super-admin-dashboard');
+      } else if (data.user.role === 'Admin') {
         navigate('/admin-dashboard');
       } else if (data.user.role === 'Doctor') {
         navigate('/doctor-dashboard');
@@ -99,6 +101,40 @@ const Login = () => {
             )}
           </button>
         </form>
+
+        <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 text-center">Fast Credentials Autofill</p>
+          <div className="grid grid-cols-2 gap-2 text-[10px]">
+            <button
+              type="button"
+              onClick={() => { setEmail('superadmin@mediconnect.com'); setPassword('Admin@123'); }}
+              className="py-1.5 px-2 bg-indigo-50 dark:bg-indigo-950/20 text-[#4338CA] rounded-lg border border-[#4338CA]/20 text-center font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-950/40 transition"
+            >
+              Super Admin
+            </button>
+            <button
+              type="button"
+              onClick={() => { setEmail('admin@mediconnect.com'); setPassword('Admin@123'); }}
+              className="py-1.5 px-2 bg-blue-50 dark:bg-blue-950/20 text-[#2563EB] rounded-lg border border-blue-500/20 text-center font-semibold hover:bg-blue-100 dark:hover:bg-blue-950/40 transition"
+            >
+              Admin
+            </button>
+            <button
+              type="button"
+              onClick={() => { setEmail('doctor1@mediconnect.com'); setPassword('Admin@123'); }}
+              className="py-1.5 px-2 bg-teal-50 dark:bg-teal-950/20 text-[#14B8A6] rounded-lg border border-[#14B8A6]/20 text-center font-semibold hover:bg-teal-100 dark:hover:bg-teal-950/40 transition"
+            >
+              Doctor
+            </button>
+            <button
+              type="button"
+              onClick={() => { setEmail('patient1@mediconnect.com'); setPassword('Admin@123'); }}
+              className="py-1.5 px-2 bg-emerald-50 dark:bg-emerald-950/20 text-[#10B981] rounded-lg border border-emerald-500/20 text-center font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-950/40 transition"
+            >
+              Patient
+            </button>
+          </div>
+        </div>
 
         <div className="text-center text-xs text-slate-400 pt-2 border-t border-slate-100 dark:border-darkBg-border">
           Don't have an account?{' '}

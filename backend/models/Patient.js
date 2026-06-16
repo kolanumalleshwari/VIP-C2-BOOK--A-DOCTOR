@@ -26,6 +26,12 @@ const patientSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    savedDoctors: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Doctor',
+      },
+    ],
   },
   {
     timestamps: true,

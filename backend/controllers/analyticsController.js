@@ -3,18 +3,19 @@ import Doctor from '../models/Doctor.js';
 import Patient from '../models/Patient.js';
 import Appointment from '../models/Appointment.js';
 import Review from '../models/Review.js';
+import Payment from '../models/Payment.js';
+import AuditLog from '../models/AuditLog.js';
 
 // @desc    Get Admin Dashboard Analytics
 // @route   GET /api/analytics/admin
 // @access  Private/Admin
 export const getAdminAnalytics = async (req, res) => {
   try {
-    // 1. Total registrations counts
     const totalPatients = await Patient.countDocuments();
     const totalDoctors = await Doctor.countDocuments();
     const totalAppointments = await Appointment.countDocuments();
 
-    // 2. Appointments status breakdown
+    // Appointments status breakdown
     const appointmentsStatus = await Appointment.aggregate([
       {
         $group: {
@@ -24,7 +25,7 @@ export const getAdminAnalytics = async (req, res) => {
       },
     ]);
 
-    // 3. Specialties breakdown
+    // Specialties breakdown
     const specialtiesBreakdown = await Doctor.aggregate([
       {
         $group: {
@@ -34,7 +35,7 @@ export const getAdminAnalytics = async (req, res) => {
       },
     ]);
 
-    // 4. Monthly appointments growth (last 6 months)
+    // Monthly appointments growth (last 6 months)
     const monthlyAppointments = await Appointment.aggregate([
       {
         $group: {
@@ -49,11 +50,12 @@ export const getAdminAnalytics = async (req, res) => {
       { $limit: 6 },
     ]);
 
-    // 5. Estimated Revenue (sum of consultationFee for completed appointments)
-    const completedAppointments = await Appointment.find({ status: 'Completed' }).populate('doctorId');
-    const totalRevenue = completedAppointments.reduce((acc, appt) => {
-      return acc + (appt.doctorId?.consultationFee || 0);
-    }, 0);
+    // Estimated Revenue (sum of Success payments)
+    const totalPaymentResult = await Payment.aggregate([
+      { $match: { status: 'Success' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } },
+    ]);
+    const totalRevenue = totalPaymentResult[0]?.total || 0;
 
     res.json({
       summary: {
@@ -82,16 +84,20 @@ export const getDoctorAnalytics = async (req, res) => {
       return res.status(404).json({ message: 'Doctor profile not found' });
     }
 
-    // 1. Appointments summary for this doctor
     const totalAppts = await Appointment.countDocuments({ doctorId: doctor._id });
     const pendingAppts = await Appointment.countDocuments({ doctorId: doctor._id, status: 'Pending' });
     const completedAppts = await Appointment.countDocuments({ doctorId: doctor._id, status: 'Completed' });
     const cancelledAppts = await Appointment.countDocuments({ doctorId: doctor._id, status: 'Cancelled' });
 
-    // 2. Earnings calculation (Completed appointments * consultationFee)
-    const earnings = completedAppts * doctor.consultationFee;
+    // Earnings calculation (payments linked to completed appointments)
+    const appointments = await Appointment.find({ doctorId: doctor._id, status: 'Completed' });
+    const apptIds = appointments.map((appt) => appt._id);
+    const earningsResult = await Payment.aggregate([
+      { $match: { appointmentId: { $in: apptIds }, status: 'Success' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } },
+    ]);
+    const earnings = earningsResult[0]?.total || 0;
 
-    // 3. Recent 5 reviews
     const recentReviews = await Review.find({ doctorId: doctor._id })
       .populate({
         path: 'patientId',
@@ -115,5 +121,74 @@ export const getDoctorAnalytics = async (req, res) => {
   } catch (error) {
     console.error('Get doctor analytics error:', error.message);
     res.status(500).json({ message: 'Server error loading doctor dashboard stats' });
+  }
+};
+
+// @desc    Get Super Admin Dashboard Analytics
+// @route   GET /api/analytics/super-admin
+// @access  Private/SuperAdmin
+export const getSuperAdminAnalytics = async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const activeDoctors = await Doctor.countDocuments({ approved: true });
+    const totalPayments = await Payment.countDocuments({ status: 'Success' });
+
+    // 1. Monthly Revenue growth
+    const monthlyRevenue = await Payment.aggregate([
+      { $match: { status: 'Success' } },
+      {
+        $group: {
+          _id: {
+            month: { $month: '$createdAt' },
+            year: { $year: '$createdAt' },
+          },
+          totalAmount: { $sum: '$amount' },
+        },
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } },
+    ]);
+
+    // 2. Booking Success Rate vs Cancellations
+    const totalAppts = await Appointment.countDocuments();
+    const completedAppts = await Appointment.countDocuments({ status: 'Completed' });
+    const cancelledAppts = await Appointment.countDocuments({ status: 'Cancelled' });
+
+    const successRate = totalAppts > 0 ? ((completedAppts / totalAppts) * 100).toFixed(1) : 0;
+    const cancellationRate = totalAppts > 0 ? ((cancelledAppts / totalAppts) * 100).toFixed(1) : 0;
+
+    // 3. User retention mock metrics (simulating progression)
+    const retentionRate = [82, 85, 87, 89, 91, 92]; // last 6 months progression
+
+    res.json({
+      summary: {
+        totalUsers,
+        activeDoctors,
+        totalPayments,
+        successRate,
+        cancellationRate,
+      },
+      monthlyRevenue,
+      retentionRate,
+    });
+  } catch (error) {
+    console.error('Get super admin analytics error:', error.message);
+    res.status(500).json({ message: 'Server error loading platform analytics' });
+  }
+};
+
+// @desc    Get Admin Audit Logs
+// @route   GET /api/analytics/audit-logs
+// @access  Private/SuperAdmin or Admin
+export const getAuditLogs = async (req, res) => {
+  try {
+    const logs = await AuditLog.find()
+      .populate('userId', 'name email role')
+      .sort({ createdAt: -1 })
+      .limit(100);
+
+    res.json(logs);
+  } catch (error) {
+    console.error('Get audit logs error:', error.message);
+    res.status(500).json({ message: 'Server error loading audit logs' });
   }
 };

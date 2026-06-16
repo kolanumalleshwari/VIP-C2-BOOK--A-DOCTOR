@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  database:
+    image: mongo:latest
+    container_name: mediconnect_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: mediconnect_api
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://database:27017/medconnect
+      - JWT_SECRET=medconnect_jwt_super_secret_key_123456
+      - JWT_REFRESH_SECRET=medconnect_refresh_super_secret_key_789012
+    depends_on:
+      - database
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    container_name: mediconnect_web
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data:

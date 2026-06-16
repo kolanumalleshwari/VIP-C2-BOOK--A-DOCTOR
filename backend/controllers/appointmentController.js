@@ -94,7 +94,7 @@ export const getAppointments = async (req, res) => {
           populate: { path: 'userId', select: 'name email phone profileImage' },
         })
         .sort({ appointmentDate: 1, appointmentTime: 1 });
-    } else if (req.user.role === 'Admin') {
+    } else if (req.user.role === 'Admin' || req.user.role === 'Super Admin') {
       appointments = await Appointment.find()
         .populate({
           path: 'patientId',
@@ -146,6 +146,9 @@ export const updateAppointmentStatus = async (req, res) => {
     }
 
     appointment.status = status;
+    if (status === 'Confirmed' && !appointment.telemedicineUrl) {
+      appointment.telemedicineUrl = `https://meet.jit.si/mediconnect-pro-${appointment._id}`;
+    }
     await appointment.save();
 
     // Send notifications based on new status

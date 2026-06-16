@@ -6,9 +6,61 @@ import Doctor from '../models/Doctor.js';
 import { sendEmail } from '../services/emailService.js';
 import { uploadFile } from '../services/cloudinaryService.js';
 
-const signToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'medconnect_jwt_super_secret_key_123456', {
-    expiresIn: '30d',
+const JWT_SECRET = process.env.JWT_SECRET || 'medconnect_jwt_super_secret_key_123456';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'medconnect_refresh_super_secret_key_789012';
+
+// Access Token expires in 15m
+const signAccessToken = (id) => {
+  return jwt.sign({ id }, JWT_SECRET, { expiresIn: '15m' });
+};
+
+// Refresh Token expires in 7d
+const signRefreshToken = (id) => {
+  return jwt.sign({ id }, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+};
+
+// Cookie Options
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'Lax',
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+};
+
+// Send Tokens response helper
+const sendTokensResponse = async (user, statusCode, res) => {
+  const accessToken = signAccessToken(user._id);
+  const refreshToken = signRefreshToken(user._id);
+
+  // Save refresh token to DB
+  user.refreshTokens = user.refreshTokens || [];
+  user.refreshTokens.push(refreshToken);
+  await user.save();
+
+  // Set refresh token cookie
+  res.cookie('refreshToken', refreshToken, cookieOptions);
+
+  let profileDetails = null;
+  if (user.role === 'Patient') {
+    profileDetails = await Patient.findOne({ userId: user._id });
+  } else if (user.role === 'Doctor') {
+    profileDetails = await Doctor.findOne({ userId: user._id });
+  }
+
+  res.status(statusCode).json({
+    accessToken,
+    refreshToken, // Return in body as fallback
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone,
+      gender: user.gender,
+      profileImage: user.profileImage,
+      isVerified: user.isVerified,
+      profileDetails,
+    },
   });
 };
 
@@ -37,7 +89,6 @@ export const register = async (req, res) => {
     });
 
     if (user.role === 'Patient') {
-      // Create empty patient details
       await Patient.create({
         userId: user._id,
         age: 18,
@@ -46,7 +97,6 @@ export const register = async (req, res) => {
         address: '',
       });
     } else if (user.role === 'Doctor') {
-      // Create empty doctor details
       await Doctor.create({
         userId: user._id,
         specialization: 'General',
@@ -59,26 +109,16 @@ export const register = async (req, res) => {
       });
     }
 
-    // Send verification email
+    // Send verification email (mocked if credentials missing)
     const verificationUrl = `${req.protocol}://${req.get('host')}/api/auth/verify/${verificationToken}`;
     const emailHtml = `
-      <h3>Welcome to MedConnect!</h3>
+      <h3>Welcome to MediConnect Pro™!</h3>
       <p>Hello ${user.name}, please verify your email address by clicking the link below:</p>
       <a href="${verificationUrl}" target="_blank">Verify Email</a>
     `;
-    await sendEmail(user.email, 'Email Verification - MedConnect', emailHtml);
+    await sendEmail(user.email, 'Email Verification - MediConnect Pro™', emailHtml);
 
-    res.status(201).json({
-      message: 'Registration successful! Verification email sent.',
-      token: signToken(user._id),
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isVerified: user.isVerified,
-      },
-    });
+    await sendTokensResponse(user, 201, res);
   } catch (error) {
     console.error('Registration error:', error.message);
     res.status(500).json({ message: 'Server error during registration' });
@@ -102,30 +142,104 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    let profileDetails = null;
-    if (user.role === 'Patient') {
-      profileDetails = await Patient.findOne({ userId: user._id });
-    } else if (user.role === 'Doctor') {
-      profileDetails = await Doctor.findOne({ userId: user._id });
-    }
-
-    res.json({
-      token: signToken(user._id),
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        phone: user.phone,
-        gender: user.gender,
-        profileImage: user.profileImage,
-        isVerified: user.isVerified,
-        profileDetails,
-      },
-    });
+    await sendTokensResponse(user, 200, res);
   } catch (error) {
     console.error('Login error:', error.message);
     res.status(500).json({ message: 'Server error during login' });
+  }
+};
+
+// @desc    Logout user & clear tokens
+// @route   POST /api/auth/logout
+// @access  Public
+export const logout = async (req, res) => {
+  const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
+
+  if (!refreshToken) {
+    res.clearCookie('refreshToken', cookieOptions);
+    return res.status(204).json({ message: 'No content' });
+  }
+
+  try {
+    const user = await User.findOne({ refreshTokens: refreshToken });
+    if (user) {
+      // Remove token from list
+      user.refreshTokens = user.refreshTokens.filter((token) => token !== refreshToken);
+      await user.save();
+    }
+  } catch (error) {
+    console.error('Logout error:', error.message);
+  }
+
+  res.clearCookie('refreshToken', cookieOptions);
+  return res.status(200).json({ message: 'Logged out successfully' });
+};
+
+// @desc    Refresh access token (Rotation)
+// @route   POST /api/auth/refresh
+// @access  Public
+export const refresh = async (req, res) => {
+  const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
+
+  if (!refreshToken) {
+    return res.status(401).json({ message: 'Refresh token missing' });
+  }
+
+  try {
+    // Find user with this refresh token
+    const user = await User.findOne({ refreshTokens: refreshToken });
+
+    // Detect refresh token reuse / hacking attempt
+    if (!user) {
+      try {
+        const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
+        // Token was valid but user wasn't found - indicates reuse/theft of this token.
+        // Invalidate all tokens for safety.
+        const compromisedUser = await User.findById(decoded.id);
+        if (compromisedUser) {
+          compromisedUser.refreshTokens = [];
+          await compromisedUser.save();
+        }
+      } catch (err) {
+        // Token was invalid anyway, do nothing
+      }
+      res.clearCookie('refreshToken', cookieOptions);
+      return res.status(403).json({ message: 'Forbidden: Invalidation triggered' });
+    }
+
+    // Verify token
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
+    } catch (err) {
+      // Expired token, remove from DB
+      user.refreshTokens = user.refreshTokens.filter((token) => token !== refreshToken);
+      await user.save();
+      res.clearCookie('refreshToken', cookieOptions);
+      return res.status(401).json({ message: 'Refresh token expired' });
+    }
+
+    // Remove the old used refresh token
+    user.refreshTokens = user.refreshTokens.filter((token) => token !== refreshToken);
+
+    // Generate new pair
+    const newAccessToken = signAccessToken(user._id);
+    const newRefreshToken = signRefreshToken(user._id);
+
+    // Save new refresh token
+    user.refreshTokens.push(newRefreshToken);
+    await user.save();
+
+    // Set new cookie
+    res.cookie('refreshToken', newRefreshToken, cookieOptions);
+
+    res.json({
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+    });
+  } catch (error) {
+    console.error('Refresh token error:', error.message);
+    res.status(500).json({ message: 'Server error during token refresh' });
   }
 };
 
@@ -173,7 +287,7 @@ export const forgotPassword = async (req, res) => {
       <p>Please click the link below to set a new password. This link expires in 10 minutes:</p>
       <a href="${resetUrl}" target="_blank">Reset Password Link</a>
     `;
-    await sendEmail(user.email, 'Password Reset - MedConnect', emailHtml);
+    await sendEmail(user.email, 'Password Reset - MediConnect Pro™', emailHtml);
 
     res.json({ message: 'Password reset link sent to email!' });
   } catch (error) {
@@ -207,6 +321,33 @@ export const resetPassword = async (req, res) => {
   } catch (error) {
     console.error('Reset password error:', error.message);
     res.status(500).json({ message: 'Server error resetting password' });
+  }
+};
+
+// @desc    Change Password
+// @route   POST /api/auth/change-password
+// @access  Private
+export const changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Incorrect current password' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Change password error:', error.message);
+    res.status(500).json({ message: 'Server error changing password' });
   }
 };
 
@@ -295,7 +436,12 @@ export const updateProfile = async (req, res) => {
           consultationFee: parsedDetails.consultationFee,
           hospitalName: parsedDetails.hospitalName,
           clinicAddress: parsedDetails.clinicAddress,
-          availability: parsedDetails.availability, // Availability as JSON/Map representation
+          availability: parsedDetails.availability,
+          bio: parsedDetails.bio,
+          about: parsedDetails.about,
+          languages: parsedDetails.languages,
+          certifications: parsedDetails.certifications,
+          consultationMethods: parsedDetails.consultationMethods,
         },
         { new: true, upsert: true }
       );

@@ -30,6 +30,14 @@ const appointmentSchema = new mongoose.Schema(
       enum: ['Pending', 'Confirmed', 'Completed', 'Cancelled'],
       default: 'Pending',
     },
+    paymentRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Payment',
+    },
+    telemedicineUrl: {
+      type: String,
+      default: '',
+    },
   },
   {
     timestamps: true,

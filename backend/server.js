@@ -12,10 +12,12 @@ import { initSocket } from './services/socketService.js';
 import authRoutes from './routes/authRoutes.js';
 import doctorRoutes from './routes/doctorRoutes.js';
 import appointmentRoutes from './routes/appointmentRoutes.js';
-import reportRoutes from './routes/reportRoutes.js';
+import recordRoutes from './routes/recordRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+import prescriptionRoutes from './routes/prescriptionRoutes.js';
 
 // Load Env
 dotenv.config();
@@ -43,10 +45,12 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/appointments', appointmentRoutes);
-app.use('/api/reports', reportRoutes);
+app.use('/api/records', recordRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/prescriptions', prescriptionRoutes);
 
 // Root Endpoint
 app.get('/', (req, res) => {
@@ -63,5 +67,5 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`MedConnect Server is executing in development mode on port ${PORT}`);
+  console.log(`MediConnect Pro™ Server is executing in development mode on port ${PORT}`);
 });

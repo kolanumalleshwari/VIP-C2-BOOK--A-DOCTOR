@@ -1,6 +1,7 @@
 import Doctor from '../models/Doctor.js';
 import User from '../models/User.js';
 import Review from '../models/Review.js';
+import AuditLog from '../models/AuditLog.js';
 
 // @desc    Get all doctors (with advanced search, filters, and sorting)
 // @route   GET /api/doctors
@@ -135,7 +136,14 @@ export const approveDoctor = async (req, res) => {
     doctor.approved = approved;
     await doctor.save();
 
-    // Trigger notification alert if socket.io system handles it
+    // Log the approval action
+    await AuditLog.create({
+      userId: req.user.id,
+      action: approved ? 'APPROVED_DOCTOR' : 'REJECTED_DOCTOR',
+      details: `Doctor ID: ${doctor._id}. Doctor User ID: ${doctor.userId}. Status set to: ${approved}`,
+      ipAddress: req.ip || '',
+    });
+
     res.json({ message: `Doctor status updated successfully. Onboard Approved: ${approved}`, doctor });
   } catch (error) {
     console.error('Approve doctor error:', error.message);

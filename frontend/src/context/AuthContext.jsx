@@ -28,7 +28,8 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const res = await api.post('/api/auth/login', { email, password });
-      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('token', res.data.accessToken);
+      localStorage.setItem('refreshToken', res.data.refreshToken);
       localStorage.setItem('user', JSON.stringify(res.data.user));
       setUser(res.data.user);
       return res.data;
@@ -43,7 +44,8 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const res = await api.post('/api/auth/register', { name, email, password, role, phone, gender });
-      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('token', res.data.accessToken);
+      localStorage.setItem('refreshToken', res.data.refreshToken);
       localStorage.setItem('user', JSON.stringify(res.data.user));
       setUser(res.data.user);
       return res.data;
@@ -54,8 +56,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      const storedRefreshToken = localStorage.getItem('refreshToken');
+      await api.post('/api/auth/logout', { refreshToken: storedRefreshToken });
+    } catch (err) {
+      // Continue cleanup
+    }
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     setUser(null);
   };

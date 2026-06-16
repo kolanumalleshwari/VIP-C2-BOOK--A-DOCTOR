@@ -56,6 +56,27 @@ const doctorSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    bio: {
+      type: String,
+      default: '',
+    },
+    about: {
+      type: String,
+      default: '',
+    },
+    languages: {
+      type: [String],
+      default: ['English'],
+    },
+    certifications: {
+      type: [String],
+      default: [],
+    },
+    consultationMethods: {
+      type: [String],
+      enum: ['Video', 'Audio', 'Chat'],
+      default: ['Video'],
+    },
   },
   {
     timestamps: true,

@@ -21,6 +21,7 @@ import DoctorDetails from './pages/DoctorDetails.jsx';
 import PatientDashboard from './pages/PatientDashboard.jsx';
 import DoctorDashboard from './pages/DoctorDashboard.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
+import SuperAdminDashboard from './pages/SuperAdminDashboard.jsx';
 
 // Guard: Route Protected by Authentication & Roles
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -93,6 +94,16 @@ function App() {
                     element={
                       <ProtectedRoute allowedRoles={['Admin']}>
                         <AdminDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Super Admin Portal */}
+                  <Route
+                    path="/super-admin-dashboard"
+                    element={
+                      <ProtectedRoute allowedRoles={['Super Admin']}>
+                        <SuperAdminDashboard />
                       </ProtectedRoute>
                     }
                   />

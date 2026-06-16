@@ -1,122 +1,76 @@
-# MedConnect – Full-Stack Doctor Appointment Booking Platform
+# MediConnect Pro™ — Enterprise Healthcare Practice Management Platform
 
-MedConnect is a premium healthcare management platform featuring search tools, scheduling systems, and patient/doctor/admin portal control panels.
-
----
-
-## Live Deployments
-
-- **Live Storefront (Web App)**: [https://medconnect-patient-doctor.vercel.app](https://medconnect-patient-doctor.vercel.app)
-- **Backend API Server**: [https://medconnect-api.onrender.com](https://medconnect-api.onrender.com)
+MediConnect Pro™ is a production-ready, enterprise-grade full-stack MERN practice management software. Built using React.js (Vite), Redux Toolkit, Node.js (Express), and MongoDB Atlas/Mongoose, the application features an advanced doctor matchmaking directory, scheduling pipelines, telemedicine integration, and analytics logs.
 
 ---
 
-## Technical Architecture
-
-- **Backend**: Node.js & Express.js, Mongoose/MongoDB, JWT authentication, Socket.io real-time push events.
-- **Frontend**: React.js & Vite, Tailwind CSS, Chart.js, Framer Motion.
-- **Files Storage**: Cloudinary (with automatic fallback to local server uploads).
-- **Mailing**: Nodemailer (with automatic fallback to server stdout terminal logs).
-
----
-
-## 1. Local Workspace Installation Guide
-
-### Prerequisites
-- Node.js (version 16 or higher)
-- MongoDB instance running locally (default: `mongodb://localhost:27017/medconnect`) or a MongoDB Atlas connection URI string.
-
-### Setup Backend Server
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Set environment variables in your `.env` file (see the [Environment Variables](#2-environment-variables-setup) section below).
-4. Launch the backend server in development mode:
-   ```bash
-   npm run dev
-   ```
-   *The server starts on port `5000`.*
-
-### Setup Frontend Client
-1. Navigate to the frontend directory:
-   ```bash
-   cd ../frontend
-   ```
-2. Install client dependencies:
-   ```bash
-   npm install
-   ```
-3. Run the Vite React application locally:
-   ```bash
-   npm run dev
-   ```
-   *The client runs on port `3000` (auto-proxies all API requests to the backend on port `5000`).*
+## 🎨 Design System Heading Color Guide
+To maintain premium SaaS branding, all page headers and dashboard cards utilize custom tailwind configurations targeting the strict branding palette:
+* **Main Headings**: `#0F172A`
+* **Section Headings**: `#0E7490`
+* **Dashboard Headings**: `#4338CA`
+* **Card Titles**: `#1E293B`
+* **Highlights (Accents)**: `#14B8A6`
 
 ---
 
-## 2. Environment Variables Setup
+## 👥 Multi-Role Protected Dashboards (RBAC)
+1. **Patient Dashboard**: Manage clinic slot bookings, simulated checkouts, upload files to the medical locker, view doctor advice, and download PDF prescriptions.
+2. **Doctor Dashboard**: Manage consultations calendar schedules (FullCalendar), approve/reject appointments requests, earn billing aggregations, lookup patient locker file records, and generate prescription invoices.
+3. **Admin Dashboard**: Manage practitioner directory listings, configure medical specialty categories, and moderate patient feedback reviews.
+4. **Super Admin Dashboard**: Track platform-wide Chart.js analytics telemetry (revenue growth, cancellation statistics, active retention graphs), inspect administrative operations audit logs, and toggles global platform settings.
 
-Create a `.env` file in the `backend/` folder:
+---
 
-```env
-PORT=5000
-MONGO_URI=mongodb://localhost:27017/medconnect
-JWT_SECRET=medconnect_jwt_super_secret_key_123456
+## 🔐 Credentials Autofill (Demo Testing accounts)
+To speed up evaluation, the Login page contains a **Fast Credentials Autofill** tab. You can click any role tab to populate:
+* **Super Admin**: `superadmin@mediconnect.com` | `Admin@123`
+* **Admin**: `admin@mediconnect.com` | `Admin@123`
+* **Doctor**: `doctor1@mediconnect.com` | `Admin@123`
+* **Patient**: `patient1@mediconnect.com` | `Admin@123`
 
-# Optional: Cloudinary Configuration. If empty, files are saved inside backend/uploads/
-CLOUDINARY_NAME=
-CLOUDINARY_KEY=
-CLOUDINARY_SECRET=
+---
 
-# Optional: SMTP email configuration. If empty, emails are logged directly to the server terminal/console.
-EMAIL_USER=
-EMAIL_PASS=
+## 🚀 Execution & Deployment Guide
+
+### Option A: Local Development Run (Recommended)
+
+#### Prerequisites
+1. Local MongoDB server running on port `27017` (using default data directories).
+2. Node.js (v18+) and npm installed.
+
+#### Step 1: Database Seeding
+Navigate to the `backend` folder and run the database seeder to populate 50+ doctors, 100+ patients, and 6 months of billing records:
+```bash
+cd backend
+npm install
+node seed.js
 ```
 
----
+#### Step 2: Start Backend Server
+Start the Express API server on port `5000`:
+```bash
+node server.js
+```
 
-## 3. MongoDB Configuration
-
-### Local Database
-By default, the application connects to a local MongoDB instance. Install and run community edition server locally:
-- **Windows**: Use the MSI installer or start via PowerShell service:
-  ```powershell
-  Start-Service MongoDB
-  ```
-- **URI Configuration**: Set `MONGO_URI=mongodb://localhost:27017/medconnect`
-
-### Cloud Database (MongoDB Atlas)
-1. Sign up on [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
-2. Create a Shared Free Cluster.
-3. Add a database user with password credentials, and whitelist access IP address `0.0.0.0/0`.
-4. Retrieve connection string and replace the local URI:
-  ```env
-  MONGO_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/medconnect?retryWrites=true&w=majority
-  ```
+#### Step 3: Start Client Dev Server
+Navigate to the `frontend` folder, install dependencies, and launch Vite dev server on port `3000`:
+```bash
+cd ../frontend
+npm install
+npm run dev
+```
+Open **`http://localhost:3000`** in your browser.
 
 ---
 
-## 4. Deployment Guide
+### Option B: Docker Containers Orchestration
 
-### Deploying the Backend (Node/Express)
-1. Set environment variables to production settings:
-   ```env
-   NODE_ENV=production
-   ```
-2. Package server for PaaS platforms (Render, Heroku, or railway):
-   - Configure Start command: `npm start`
-   - Bind environment properties inside the platform dashboard settings.
-   - Serve static static folder uploads or use external storage providers (Cloudinary is recommended for production deployment).
-
-### Deploying the Frontend (React/Vite)
-1. Build compilation files for production:
-   ```bash
-   npm run build
-   ```
-2. Deploy the resulting `/dist` folder to static web hosts (Vercel, Netlify, or Hostinger).
-3. Set proxy/CORS variables matching the production backend server domain name.
+You can run the entire MERN stack using Docker Compose:
+```bash
+docker-compose up --build
+```
+This builds and sets up:
+* MongoDB container on port `27017`
+* Node Express API container on port `5000`
+* Vite React container (served via Nginx) on port `3000`

@@ -33,8 +33,12 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['Patient', 'Doctor', 'Admin'],
+      enum: ['Patient', 'Doctor', 'Admin', 'Super Admin'],
       default: 'Patient',
+    },
+    refreshTokens: {
+      type: [String],
+      default: [],
     },
     isVerified: {
       type: Boolean,
