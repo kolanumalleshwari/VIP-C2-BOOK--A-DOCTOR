@@ -4,6 +4,13 @@ MedConnect is a premium healthcare management platform featuring search tools, s
 
 ---
 
+## Live Deployments
+
+- **Live Storefront (Web App)**: [https://medconnect-patient-doctor.vercel.app](https://medconnect-patient-doctor.vercel.app)
+- **Backend API Server**: [https://medconnect-api.onrender.com](https://medconnect-api.onrender.com)
+
+---
+
 ## Technical Architecture
 
 - **Backend**: Node.js & Express.js, Mongoose/MongoDB, JWT authentication, Socket.io real-time push events.
