@@ -63,7 +63,7 @@ const Navbar = () => {
     navigate('/login');
   };
 
-  const unreadCount = notifications.filter(n => !n.readStatus).length;
+  const unreadCount = Array.isArray(notifications) ? notifications.filter(n => !n.readStatus).length : 0;
 
   return (
     <nav className="sticky top-0 z-50 glass-effect border-b border-slate-200/80 dark:border-slate-800/80 transition-all duration-200">
@@ -124,7 +124,7 @@ const Navbar = () => {
                         )}
                       </div>
                       <div className="max-h-60 overflow-y-auto px-2 py-1">
-                        {notifications.length === 0 ? (
+                        {!Array.isArray(notifications) || notifications.length === 0 ? (
                           <div className="text-center py-6 text-xs text-slate-400">No notifications yet.</div>
                         ) : (
                           notifications.map((n) => (

@@ -14,7 +14,9 @@ export const SocketProvider = ({ children }) => {
 
     if (user) {
       // Connect to the backend socket server
-      const socketUrl = import.meta.env.VITE_API_URL || window.location.origin;
+      const isLocal = typeof window !== 'undefined' && 
+        (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1'));
+      const socketUrl = import.meta.env.VITE_API_URL || (isLocal ? window.location.origin : 'https://vip-c2-book-a-doctor.onrender.com');
       socketInstance = io(socketUrl, {
         transports: ['websocket'],
       });

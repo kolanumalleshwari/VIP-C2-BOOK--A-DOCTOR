@@ -212,7 +212,7 @@ const DoctorDiscovery = () => {
         <div className="lg:col-span-9">
           {loading ? (
             <SkeletonLoader type="card" count={3} />
-          ) : doctors.length === 0 ? (
+          ) : !Array.isArray(doctors) || doctors.length === 0 ? (
             <EmptyState title="No Doctors Found" message="Try relaxing your filters or searching another medical specialty field." />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

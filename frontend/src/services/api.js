@@ -1,7 +1,10 @@
 import axios from 'axios';
 
+const isLocal = typeof window !== 'undefined' && 
+  (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1'));
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '',
+  baseURL: import.meta.env.VITE_API_URL || (isLocal ? '' : 'https://vip-c2-book-a-doctor.onrender.com'),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -63,7 +66,9 @@ api.interceptors.response.use(
         }
 
         console.log('Access token expired. Requesting rotated token pair...');
-        const baseURL = import.meta.env.VITE_API_URL || '';
+        const isLocal = typeof window !== 'undefined' && 
+          (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1'));
+        const baseURL = import.meta.env.VITE_API_URL || (isLocal ? '' : 'https://vip-c2-book-a-doctor.onrender.com');
         const res = await axios.post(`${baseURL}/api/auth/refresh`, { refreshToken: storedRefreshToken });
         const { accessToken, refreshToken } = res.data;
 
